@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 extern crate notify;
 
-use notify::{Watcher, RecursiveMode, watcher};
+use notify::{PollWatcher, RecursiveMode, watcher};
 use std::sync::mpsc::channel;
 use value_box::{ValueBox};
 
@@ -16,7 +16,7 @@ pub fn filewatcher_destroy_channel(ptr: *mut ValueBox<(Sender<DebouncedEvent>, R
 }
 
 #[no_mangle]
-pub fn filewatcher_create_watcher(ptr: *mut ValueBox<(Sender<DebouncedEvent>, Receiver<DebouncedEvent>)>) -> *mut ValueBox<dyn Watcher> {
+pub fn filewatcher_create_watcher(ptr: *mut ValueBox<(Sender<DebouncedEvent>, Receiver<DebouncedEvent>)>) -> *mut ValueBox<PollWatcher> {
     ptr.to_ref().and_then(|tuple|
         match watcher(tuple.0, RecursiveMode::Recursive) {
             Ok(watcher) => ValueBox::new(watcher).into_raw(),
@@ -25,7 +25,7 @@ pub fn filewatcher_create_watcher(ptr: *mut ValueBox<(Sender<DebouncedEvent>, Re
 }
 
 #[no_mangle]
-pub fn filewatcher_destroy_watcher(ptr: *mut ValueBox<dyn Watcher>) {
+pub fn filewatcher_destroy_watcher(ptr: *mut ValueBox<PollWatcher>) {
     ptr.release();
 }
 
