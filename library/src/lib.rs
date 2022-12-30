@@ -3,9 +3,7 @@ extern crate notify;
 
 use notify::{Watcher, RecursiveMode, watcher};
 use std::sync::mpsc::channel;
-use std::time::Duration;
-use string_box::StringBox;
-use value_box::{BoxerError, ReturnBoxerResult, ValueBox, ValueBoxPointer};
+use value_box::{ValueBox};
 
 #[no_mangle]
 pub fn filewatcher_create_channel() -> *mut ValueBox<(Sender<DebouncedEvent>, Receiver<DebouncedEvent>)> {
@@ -18,7 +16,7 @@ pub fn filewatcher_destroy_channel(ptr: *mut ValueBox<(Sender<DebouncedEvent>, R
 }
 
 #[no_mangle]
-pub fn filewatcher_create_watcher(ptr: *mut ValueBox<(Sender<DebouncedEvent>, Receiver<DebouncedEvent>)>) -> *mut ValueBox<Watcher> {
+pub fn filewatcher_create_watcher(ptr: *mut ValueBox<(Sender<DebouncedEvent>, Receiver<DebouncedEvent>)>) -> *mut ValueBox<dyn Watcher> {
     ptr.to_ref().and_then(|tuple|
         match watcher(tuple.0, RecursiveMode::Recursive) {
             Ok(watcher) => ValueBox::new(watcher).into_raw(),
@@ -27,7 +25,7 @@ pub fn filewatcher_create_watcher(ptr: *mut ValueBox<(Sender<DebouncedEvent>, Re
 }
 
 #[no_mangle]
-pub fn filewatcher_destroy_watcher(ptr: *mut ValueBox<Watcher>) {
+pub fn filewatcher_destroy_watcher(ptr: *mut ValueBox<dyn Watcher>) {
     ptr.release();
 }
 
