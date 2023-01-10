@@ -7,6 +7,10 @@ use std::time::Duration;
 use value_box::{ValueBox, ValueBoxPointer};
 use string_box::StringBox;
 
+#[no_mangle]
+pub fn filewatcher_test() -> bool {
+    true
+}
 
 #[no_mangle]
 pub fn filewatcher_create_watcher() -> *mut ValueBox<(PollWatcher, Receiver<DebouncedEvent>)> {
