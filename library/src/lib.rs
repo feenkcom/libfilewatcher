@@ -296,3 +296,25 @@ pub extern "C" fn filewatcher_event_path_at(
         Err(_) => ()
     }
 }
+
+#[phlow::extensions(FileWatcherExtensions, EventKind)]
+impl EventKindExtensions {
+    #[phlow::view]
+    pub fn information_for(_this: &EventKind, view: impl phlow::PhlowView) -> impl phlow::PhlowView {
+        view.list()
+            .title("Information")
+            .items(|event_kind: &EventKind, _object| {
+                phlow_all!(vec![
+                    ("Is access", phlow!(event_kind.is_access())),
+                    ("Is modify", phlow!(event_kind.is_modify())),
+                    ("Is create", phlow!(event_kind.is_create())),
+                    ("Is remove", phlow!(event_kind.is_remove())),
+                    ("Is other", phlow!(event_kind.is_other())),
+                ])
+            })
+            .item_text(|each: &(&str, phlow::PhlowObject), _object| {
+                format!("{}: {}", each.0, each.1.to_string())
+            })
+            .send(|each: &(&str, phlow::PhlowObject), _object| each.1.clone())
+    }
+}
