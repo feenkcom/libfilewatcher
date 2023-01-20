@@ -1,8 +1,13 @@
 #![allow(non_snake_case)]
+#![feature(specialization)]
 extern crate env_logger;
 extern crate notify;
+#[macro_use]
+extern crate phlow;
+extern crate phlow_extensions;
 
 use notify::{Event, EventHandler, RecommendedWatcher, RecursiveMode, Watcher};
+use phlow_extensions::CoreExtensions;
 use std::collections::VecDeque;
 use std::error::Error;
 use std::path::Path;
@@ -99,6 +104,29 @@ impl PharoWatcher {
             .expect("Lock acquisition failed")
             .pop_front()
     }
+
+    pub fn queue_size(&self) -> usize {
+        self.events.lock().expect("Lock acquisition failed").len()
+    }
+}
+
+define_extensions!(FileWatcherExtensions);
+import_extensions!(FileWatcherExtensions, CoreExtensions);
+
+#[phlow::extensions(FileWatcherExtensions, PharoWatcher)]
+impl WatcherExtensions {
+    #[phlow::view]
+    pub fn information_for(_this: &PharoWatcher, view: impl phlow::PhlowView) -> impl phlow::PhlowView {
+        view.list()
+            .title("Information")
+            .items(|watcher: &PharoWatcher, _object| {
+                phlow_all!(vec![("Queue size", phlow!(watcher.queue_size()))])
+            })
+            .item_text(|each: &(&str, phlow::PhlowObject), _object| {
+                format!("{}: {}", each.0, each.1.to_string())
+            })
+            .send(|each: &(&str, phlow::PhlowObject), _object| each.1.clone())
+    }
 }
 
 #[no_mangle]
@@ -131,6 +159,39 @@ pub extern "C" fn filewatcher_watcher_watch(
 }
 
 #[no_mangle]
+pub extern "C" fn filewatcher_watcher_poll(
+    ptr: *mut ValueBox<PharoWatcher>,
+) -> *mut ValueBox<Event> {
+    match ptr.to_ref() {
+        Ok(watcher) =>
+            match watcher.poll_event() {
+                Some(event) => ValueBox::new(event).into_raw(),
+                None => std::ptr::null_mut()
+            }
+        Err(_) => std::ptr::null_mut()
+    }
+}
+
+#[no_mangle]
 pub extern "C" fn filewatcher_destroy_watcher(ptr: *mut ValueBox<PharoWatcher>) {
     ptr.release();
+}
+
+#[phlow::extensions(FileWatcherExtensions, Event)]
+impl EventExtensions {
+    #[phlow::view]
+    pub fn information_for(_this: &Event, view: impl phlow::PhlowView) -> impl phlow::PhlowView {
+        view.list()
+            .title("Information")
+            .items(|event: &Event, _object| {
+                phlow_all!(vec![
+                    ("Event type", phlow!(event.kind.clone())),
+                    ("Event paths", phlow!(event.paths.clone())),
+                ])
+            })
+            .item_text(|each: &(&str, phlow::PhlowObject), _object| {
+                format!("{}: {}", each.0, each.1.to_string())
+            })
+            .send(|each: &(&str, phlow::PhlowObject), _object| each.1.clone())
+    }
 }

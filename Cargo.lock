@@ -304,6 +304,8 @@ version = "0.0.1"
 dependencies = [
  "env_logger",
  "notify",
+ "phlow",
+ "phlow-extensions",
  "string-box",
  "value-box",
 ]
@@ -385,6 +387,36 @@ name = "percent-encoding"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
+
+[[package]]
+name = "phlow"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6803fba56786410bc1647f714feedc5d5ed6e2fde20eff78387b04ec4e630f52"
+dependencies = [
+ "log",
+ "phlow-derive",
+]
+
+[[package]]
+name = "phlow-derive"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "adb0a85ed5f435ec488e01c2889fd157aecbe66712fe43541846b7c55233387f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "phlow-extensions"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d1a97c13ffd163539e69edbd3be0455a1f42c01b5aa5b38f06be61731eee6ce"
+dependencies = [
+ "phlow",
+]
 
 [[package]]
 name = "proc-macro-error"
