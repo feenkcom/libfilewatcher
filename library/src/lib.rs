@@ -1,12 +1,12 @@
 #![allow(non_snake_case)]
-#![feature(specialization)]
+#![feature(min_specialization)]
 extern crate env_logger;
 extern crate notify;
 #[macro_use]
 extern crate phlow;
 extern crate phlow_extensions;
 
-use notify::{Event, EventHandler, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{Event, EventKind, EventHandler, RecommendedWatcher, RecursiveMode, Watcher};
 use phlow_extensions::CoreExtensions;
 use std::collections::VecDeque;
 use std::error::Error;
@@ -193,5 +193,106 @@ impl EventExtensions {
                 format!("{}: {}", each.0, each.1.to_string())
             })
             .send(|each: &(&str, phlow::PhlowObject), _object| each.1.clone())
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn filewatcher_event_kind(
+    ptr: *mut ValueBox<Event>,
+) -> *mut ValueBox<EventKind> {
+    match ptr.to_ref() {
+        Ok(event) => ValueBox::new(event.kind.clone()).into_raw(),
+        Err(_) => std::ptr::null_mut()
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn filewatcher_eventkind_is_any(
+    ptr: *mut ValueBox<EventKind>
+) -> bool {
+    match ptr.to_ref() {
+        Ok(eventkind) =>
+            match *eventkind {
+                EventKind::Any => true,
+                _ => false
+            }
+        Err(_) => false
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn filewatcher_eventkind_is_access(
+    ptr: *mut ValueBox<EventKind>
+) -> bool {
+    match ptr.to_ref() {
+        Ok(eventkind) => eventkind.is_access(),
+        Err(_) => false
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn filewatcher_eventkind_is_create(
+    ptr: *mut ValueBox<EventKind>
+) -> bool {
+    match ptr.to_ref() {
+        Ok(eventkind) => eventkind.is_create(),
+        Err(_) => false
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn filewatcher_eventkind_is_modify(
+    ptr: *mut ValueBox<EventKind>
+) -> bool {
+    match ptr.to_ref() {
+        Ok(eventkind) => eventkind.is_modify(),
+        Err(_) => false
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn filewatcher_eventkind_is_remove(
+    ptr: *mut ValueBox<EventKind>
+) -> bool {
+    match ptr.to_ref() {
+        Ok(eventkind) => eventkind.is_remove(),
+        Err(_) => false
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn filewatcher_eventkind_is_other(
+    ptr: *mut ValueBox<EventKind>
+) -> bool {
+    match ptr.to_ref() {
+        Ok(eventkind) => eventkind.is_other(),
+        Err(_) => false
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn filewatcher_event_path_size(
+    ptr: *mut ValueBox<Event>,
+) -> *mut ValueBox<usize> {
+    match ptr.to_ref() {
+        Ok(event) => ValueBox::new(event.paths.len()).into_raw(),
+        Err(_) => std::ptr::null_mut()
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn filewatcher_event_path_at(
+    ptr: *mut ValueBox<Event>,
+    str_ptr: *mut ValueBox<StringBox>,
+    index: usize,
+) {
+    match ptr.to_ref() {
+        Ok(event) =>
+            match str_ptr.to_ref() {
+                Ok(mut contents) =>
+                    contents.set_string(event.paths[index].to_string_lossy().to_string()),
+                Err(_) => ()
+            }
+        Err(_) => ()
     }
 }
