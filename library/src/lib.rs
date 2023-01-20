@@ -10,11 +10,13 @@ use notify::{Event, EventKind, EventHandler, RecommendedWatcher, RecursiveMode, 
 use phlow_extensions::CoreExtensions;
 use std::collections::VecDeque;
 use std::error::Error;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use string_box::StringBox;
 use value_box::ReturnBoxerResult;
 use value_box::{ValueBox, ValueBoxPointer};
+
+type AffectedPaths = Vec<PathBuf>;
 
 #[no_mangle]
 pub extern "C" fn filewatcher_test() -> bool {
@@ -311,6 +313,37 @@ impl EventKindExtensions {
                     ("Is remove", phlow!(event_kind.is_remove())),
                     ("Is other", phlow!(event_kind.is_other())),
                 ])
+            })
+            .item_text(|each: &(&str, phlow::PhlowObject), _object| {
+                format!("{}: {}", each.0, each.1.to_string())
+            })
+            .send(|each: &(&str, phlow::PhlowObject), _object| each.1.clone())
+    }
+}
+
+#[phlow::extensions(FileWatcherExtensions, AffectedPaths)]
+impl AffectedPathExtensions {
+    #[phlow::view]
+    pub fn information_for(_this: &AffectedPaths, view: impl phlow::PhlowView) -> impl phlow::PhlowView {
+        view.list()
+            .title("Information")
+            .items(|affected_paths: &AffectedPaths, _object| {
+                phlow_all!(affected_paths.clone())
+            })
+            .item_text(|each: &PathBuf, _object| {
+                each.to_string_lossy().to_string()
+            })
+    }
+}
+
+#[phlow::extensions(FileWatcherExtensions, PathBuf)]
+impl PathBufExtensions {
+    #[phlow::view]
+    pub fn information_for(_this: &PathBuf, view: impl phlow::PhlowView) -> impl phlow::PhlowView {
+        view.list()
+            .title("Information")
+            .items(|path: &PathBuf, _object| {
+                phlow_all!(vec![("Path", phlow!(path.to_string_lossy().to_string()))])
             })
             .item_text(|each: &(&str, phlow::PhlowObject), _object| {
                 format!("{}: {}", each.0, each.1.to_string())
