@@ -209,6 +209,16 @@ pub extern "C" fn filewatcher_event_kind(
 }
 
 #[no_mangle]
+pub extern "C" fn filewatcher_destroy_event(ptr: *mut ValueBox<Event>) {
+    ptr.release();
+}
+
+#[no_mangle]
+pub extern "C" fn filewatcher_destroy_eventkind(ptr: *mut ValueBox<EventKind>) {
+    ptr.release();
+}
+
+#[no_mangle]
 pub extern "C" fn filewatcher_eventkind_is_any(
     ptr: *mut ValueBox<EventKind>
 ) -> bool {
