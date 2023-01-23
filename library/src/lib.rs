@@ -285,10 +285,10 @@ pub extern "C" fn filewatcher_eventkind_is_other(
 #[no_mangle]
 pub extern "C" fn filewatcher_event_path_size(
     ptr: *mut ValueBox<Event>,
-) -> *mut ValueBox<usize> {
+) -> usize {
     match ptr.to_ref() {
-        Ok(event) => ValueBox::new(event.paths.len()).into_raw(),
-        Err(_) => std::ptr::null_mut()
+        Ok(event) => event.paths.len(),
+        Err(_) => 0
     }
 }
 
@@ -298,15 +298,16 @@ pub extern "C" fn filewatcher_event_path_at(
     str_ptr: *mut ValueBox<StringBox>,
     index: usize,
 ) {
-    match ptr.to_ref() {
-        Ok(event) =>
-            match str_ptr.to_ref() {
-                Ok(mut contents) =>
-                    contents.set_string(event.paths[index].to_string_lossy().to_string()),
-                Err(_) => ()
-            }
-        Err(_) => ()
-    }
+    str_ptr
+        .to_ref()
+        .and_then(|mut contents| {
+            ptr
+                .to_ref()
+                .map(|event| {
+                    contents.set_string(event.paths[index].to_string_lossy().to_string())
+                })
+        })
+        .log();
 }
 
 #[phlow::extensions(FileWatcherExtensions, EventKind)]
