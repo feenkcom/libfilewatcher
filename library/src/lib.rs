@@ -4,8 +4,8 @@ extern crate env_logger;
 extern crate notify;
 #[macro_use]
 extern crate phlow;
-extern crate phlow_ffi;
 extern crate phlow_extensions;
+extern crate phlow_ffi;
 
 use notify::{Event, EventHandler, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use phlow_extensions::CoreExtensions;
@@ -130,12 +130,8 @@ impl WatcherExtensions {
     ) -> impl phlow::PhlowView {
         view.list()
             .title("Information")
-            .items::<PharoWatcher>(|watcher| {
-                phlow_all!(vec![("Queue size", watcher.queue_size())])
-            })
-            .item_text::<(&str, usize)>(|each| {
-                format!("{}: {}", each.0, each.1.to_string())
-            })
+            .items::<PharoWatcher>(|watcher| phlow_all!(vec![("Queue size", watcher.queue_size())]))
+            .item_text::<(&str, usize)>(|each| format!("{}: {}", each.0, each.1.to_string()))
             .send::<(&str, usize)>(|each| phlow!(each.1.clone()))
     }
 }
@@ -296,9 +292,7 @@ impl EventKindExtensions {
                     ("Is other", event_kind.is_other()),
                 ])
             })
-            .item_text::<(&str, bool)>(|each| {
-                format!("{}: {}", each.0, each.1.to_string())
-            })
+            .item_text::<(&str, bool)>(|each| format!("{}: {}", each.0, each.1.to_string()))
             .send::<(&str, bool)>(|each| phlow!(each.1.clone()))
     }
 }
@@ -323,12 +317,8 @@ impl PathBufExtensions {
     pub fn information_for(_this: &PathBuf, view: impl phlow::PhlowView) -> impl phlow::PhlowView {
         view.list()
             .title("Information")
-            .items::<PathBuf>(|path| {
-                phlow_all!(vec![("Path", path.to_string_lossy().to_string())])
-            })
-            .item_text::<(&str, &str)>(|each| {
-                format!("{}: {}", each.0, each.1.to_string())
-            })
+            .items::<PathBuf>(|path| phlow_all!(vec![("Path", path.to_string_lossy().to_string())]))
+            .item_text::<(&str, &str)>(|each| format!("{}: {}", each.0, each.1.to_string()))
             .send::<(&str, &str)>(|each| phlow!(each.1.clone()))
     }
 }
