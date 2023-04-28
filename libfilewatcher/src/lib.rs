@@ -6,6 +6,8 @@ extern crate notify;
 extern crate phlow;
 extern crate phlow_extensions;
 extern crate phlow_ffi;
+#[macro_use]
+extern crate value_box;
 
 use notify::{Event, EventHandler, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use phlow_extensions::CoreExtensions;
@@ -144,7 +146,7 @@ pub extern "C" fn filewatcher_create_watcher(
     let events = Arc::new(Mutex::new(VecDeque::new()));
     let watcher = FileWatcher::new(callback, index, events.clone());
     match notify::recommended_watcher(watcher) {
-        Ok(notify_watcher) => ValueBox::new(PharoWatcher::new(notify_watcher, events)).into_raw(),
+        Ok(notify_watcher) => value_box!(PharoWatcher::new(notify_watcher, events)).into_raw(),
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -169,7 +171,7 @@ pub extern "C" fn filewatcher_watcher_poll(
     ptr: *mut ValueBox<PharoWatcher>,
 ) -> *mut ValueBox<Event> {
     ptr.with_ref_ok(|watcher| match watcher.poll_event() {
-        Some(event) => ValueBox::new(event).into_raw(),
+        Some(event) => value_box!(event).into_raw(),
         None => std::ptr::null_mut(),
     })
     .unwrap_or_else(|_| std::ptr::null_mut())
@@ -192,16 +194,16 @@ impl EventExtensions {
                     ("Event paths", phlow!(event.paths.clone())),
                 ])
             })
-            .item_text::<(&str, &phlow::PhlowObject)>(|each| {
+            .item_text::<(&str, phlow::PhlowObject)>(|each| {
                 format!("{}: {}", each.0, each.1.to_string())
             })
-            .send::<(&str, &phlow::PhlowObject)>(|each| phlow!(each.1.clone()))
+            .send::<(&str, phlow::PhlowObject)>(|each| phlow!(each.1.clone()))
     }
 }
 
 #[no_mangle]
 pub extern "C" fn filewatcher_event_kind(ptr: *mut ValueBox<Event>) -> *mut ValueBox<EventKind> {
-    ptr.with_ref_ok(|event| ValueBox::new(event.kind.clone()).into_raw())
+    ptr.with_ref_ok(|event| value_box!(event.kind.clone()).into_raw())
         .unwrap_or_else(|_| std::ptr::null_mut())
 }
 
