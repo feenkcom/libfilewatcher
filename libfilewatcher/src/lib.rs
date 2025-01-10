@@ -167,6 +167,21 @@ pub extern "C" fn filewatcher_watcher_watch(
 }
 
 #[no_mangle]
+pub extern "C" fn filewatcher_watcher_unwatch(
+    ptr: *mut ValueBox<PharoWatcher>,
+    path_ptr: *mut ValueBox<StringBox>,
+) {
+    ptr.with_mut(|watcher| {
+        path_ptr.with_ref(|path| {
+            watcher
+                .unwatch(Path::new(&path.to_string()))
+                .map_err(|error| (Box::new(error) as Box<dyn Error>).into())
+        })
+    })
+    .log();
+}
+
+#[no_mangle]
 pub extern "C" fn filewatcher_watcher_poll(
     ptr: *mut ValueBox<PharoWatcher>,
 ) -> *mut ValueBox<Event> {
