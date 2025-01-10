@@ -108,6 +108,10 @@ impl PharoWatcher {
         self.watcher.watch(path, RecursiveMode::Recursive)
     }
 
+    pub fn unwatch(&mut self, path: &Path) -> notify::Result<()> {
+        self.watcher.unwatch(path, RecursiveMode::Recursive)
+    }
+
     pub fn poll_event(&self) -> Option<Event> {
         self.events
             .lock()
