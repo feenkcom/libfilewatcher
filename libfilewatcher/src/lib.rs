@@ -340,6 +340,6 @@ impl PathBufExtensions {
             .title("Information")
             .items::<PathBuf>(|path| phlow_all!(vec![("Path", path.to_string_lossy().to_string())]))
             .item_text::<(&str, &str)>(|each| format!("{}: {}", each.0, each.1.to_string()))
-            .send::<(&str, &str)>(|each| phlow!(each.1.clone()))
+            .send::<(&str, &str)>(|each| phlow!(each.1))
     }
 }
