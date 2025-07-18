@@ -153,6 +153,10 @@ impl PharoWatcher {
             .pop_front()
     }
 
+    pub fn path_size(&self) -> usize {
+        self.paths.lock().expect("Lock acquisition for paths failed").len()
+    }
+
     pub fn queue_size(&self) -> usize {
         self.events.lock().expect("Lock acquisition failed").len()
     }
@@ -170,7 +174,7 @@ impl WatcherExtensions {
     ) -> impl phlow::PhlowView {
         view.list()
             .title("Information")
-            .items::<PharoWatcher>(|watcher| phlow_all!(vec![("Queue size", watcher.queue_size())]))
+            .items::<PharoWatcher>(|watcher| phlow_all!(vec![("Queue size", watcher.queue_size()), ("Path size", watcher.path_size())]))
             .item_text::<(&str, usize)>(|each| format!("{}: {}", each.0, each.1.to_string()))
             .send::<(&str, usize)>(|each| phlow!(each.1.clone()))
     }
