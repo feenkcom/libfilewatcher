@@ -55,6 +55,7 @@ impl SemaphoreSignaller {
 pub struct FileWatcher {
     signaller: SemaphoreSignaller,
     events: Arc<Mutex<VecDeque<Event>>>,
+    paths: Arc<Mutex<Vec<PathBuf>>>,
 }
 
 #[no_mangle]
@@ -67,14 +68,32 @@ impl FileWatcher {
         callback: unsafe extern "C" fn(usize),
         index: usize,
         events: Arc<Mutex<VecDeque<Event>>>,
+        paths: Arc<Mutex<Vec<PathBuf>>>,
     ) -> Self {
         Self {
             signaller: SemaphoreSignaller::new(callback, index),
             events,
+            paths,
         }
     }
 
     pub fn push_event(&self, event: Event) {
+        /* If we watch specific paths, we check for them here */
+        let paths = self.paths.lock().expect("Lock acquisition for paths failed");
+        if paths.len() > 0 {
+            let mut contained = false;
+
+            for path in paths.iter() {
+                if event.paths.contains(&path) {
+                    contained = true;
+                    break
+                }
+            }
+
+            if !contained {
+                return
+            }
+        }
         self.events
             .lock()
             .expect("Lock acquisition failed")
@@ -97,15 +116,30 @@ impl EventHandler for FileWatcher {
 pub struct PharoWatcher {
     watcher: RecommendedWatcher,
     events: Arc<Mutex<VecDeque<Event>>>,
+    paths: Arc<Mutex<Vec<PathBuf>>>,
 }
 
 impl PharoWatcher {
-    pub fn new(watcher: RecommendedWatcher, events: Arc<Mutex<VecDeque<Event>>>) -> Self {
-        Self { watcher, events }
+    pub fn new(watcher: RecommendedWatcher, events: Arc<Mutex<VecDeque<Event>>>, paths: Arc<Mutex<Vec<PathBuf>>>) -> Self {
+        Self { watcher, events, paths }
     }
 
     pub fn watch(&mut self, path: &Path) -> notify::Result<()> {
         self.watcher.watch(path, RecursiveMode::Recursive)
+    }
+
+    /* Once we use this, we cannot go back to watching non-discriminatingly! */
+    pub fn watch_filename(&mut self, path: &Path) -> notify::Result<()> {
+        match path.parent() {
+        Some(parent) => {
+        self.paths
+            .lock()
+            .expect("Lock acquisition for paths failed")
+            .push(path.to_path_buf());
+        self.watcher.watch(parent, RecursiveMode::NonRecursive)
+        },
+        None => self.watch(path)
+        }
     }
 
     pub fn unwatch(&mut self, path: &Path) -> notify::Result<()> {
@@ -148,9 +182,10 @@ pub extern "C" fn filewatcher_create_watcher(
     index: usize,
 ) -> *mut ValueBox<PharoWatcher> {
     let events = Arc::new(Mutex::new(VecDeque::new()));
-    let watcher = FileWatcher::new(callback, index, events.clone());
+    let paths = Arc::new(Mutex::new(Vec::new()));
+    let watcher = FileWatcher::new(callback, index, events.clone(), paths.clone());
     match notify::recommended_watcher(watcher) {
-        Ok(notify_watcher) => value_box!(PharoWatcher::new(notify_watcher, events)).into_raw(),
+        Ok(notify_watcher) => value_box!(PharoWatcher::new(notify_watcher, events, paths)).into_raw(),
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -164,6 +199,21 @@ pub extern "C" fn filewatcher_watcher_watch(
         path_ptr.with_ref(|path| {
             watcher
                 .watch(Path::new(&path.to_string()))
+                .map_err(|error| (Box::new(error) as Box<dyn Error>).into())
+        })
+    })
+    .log();
+}
+
+#[no_mangle]
+pub extern "C" fn filewatcher_watcher_watch_filename(
+    ptr: *mut ValueBox<PharoWatcher>,
+    path_ptr: *mut ValueBox<StringBox>,
+) {
+    ptr.with_mut(|watcher| {
+        path_ptr.with_ref(|path| {
+            watcher
+                .watch_filename(Path::new(&path.to_string()))
                 .map_err(|error| (Box::new(error) as Box<dyn Error>).into())
         })
     })
